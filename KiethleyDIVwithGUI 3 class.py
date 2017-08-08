@@ -6,22 +6,25 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QApplication
 import serial
 import time
 import numpy as np
-from pylab import *
+from pylab import *  # do not import all, (very!) bad practices
 import matplotlib.pyplot as plt
 from datetime import datetime
 import os
 from PIL import Image
 
-ser=serial.Serial()
+# the below should be somewhere else
+ser = serial.Serial()  # styling
 ser.baudrate = 57600
 ser.port = 'COM5'
-ser.timeout = 1       }
+ser.timeout = 1 
+
 
 class UI_Main(object):
-    def setupUI(self, MainWindow):
+    def setupUI(self, MainWindow):  # mainwindow should start lowercase (uppercase are for classes)
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800,600)
+        MainWindow.resize(800, 600)  # styling
 
+        # no need to have methods below for what they are doing
         def hbox(where):
             return QtWidgets.QHBoxLayout(where)
 
@@ -88,7 +91,7 @@ class UI_Main(object):
         self.sample_measured.addWidget(self.sample_measuredText)
         self.verticalLayout2.addLayout(self.sample_measured)
 
-        self.Rs_measured = hbox(self.centralwidget)
+        self.Rs_measured = hbox(self.centralwidget)  # all attributes must start with lowercase, or underscore
         self.Rs_measured.setObjectName("Rs_measured")
         self.Rs_measuredLabel = QtWidgets.QLabel(self.centralwidget)
         self.Rs_measuredLabel.setObjectName("Rs_measuredLabel")
@@ -108,7 +111,6 @@ class UI_Main(object):
         self.Rsh_measured.addWidget(self.Rsh_measuredText)
         self.verticalLayout2.addLayout(self.Rsh_measured)
 
-
         self.DIV = vbox(self.centralwidget)
         self.DIV_graph = QtWidgets.QLabel(self.centralwidget)
         self.DIV_graph_pix = QtGui.QPixmap(None)
@@ -125,7 +127,8 @@ class UI_Main(object):
 
         self.retranslateUI(MainWindow)
 
-    def retranslateUI(self, MainWindow):
+    # the method above does not really need to here, but can be at the end of __init__
+    def retranslateUI(self, MainWindow):  # --> main_window
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "DIV Testing Window"))
         self.operator_label.setText(_translate("MainWindow", "Operator:"))
@@ -138,37 +141,53 @@ class UI_Main(object):
         self.Rs_measuredText.setText(_translate("MainWindow", "Waiting for Measurement Data"))
         self.Rsh_measuredLabel.setText(_translate("MainWindow", "Measured Rsh: "))
         self.Rsh_measuredText.setText(_translate("MainWindow", "Waiting for Measurement Data"))
-#
+
+
 class BeginMeasurements(QThread):
-    measurement = pyqtSignal(str)
+
+    measurement = pyqtSignal(str)  # why do you need two signals?
     finished = pyqtSignal()
-    def __init__(self, parent = None):
+
+    def __init__(self, parent=None):  # styling
         super(BeginMeasurements, self).__init__(parent)
 
-    def TakeMeasurement(self):
-
+    def TakeMeasurement(self):  # -> take_measurement
         Rs_min = 2.5
         return Rs_min
 
     def run(self):
         print(y)
-        Rs_min = str(self.TakeMeasurement())
+        Rs_min = str(self.TakeMeasurement())  # lowercase
         print(yes1)
         self.measurement.emit(Rs_min)
         print(yes2)
         time.sleep(2)
-        self.finished.emit()
+        self.finished.emit()  # this is probably not needed, or if needed, should be explained
 
 
-class CreateUIThread(QMainWindow, UI_Main):
+class CreateUIThread(QMainWindow, UI_Main):  # could have a better naming such as Window
     def __init__(self, parent=None):
         super(CreateUIThread, self).__init__(parent)
-        self.setupUI(self)
+        # what is done here is complicated unless you really understand what you are doing
+        # my recomendation would be: keep all things about mainWindow here, and create the 
+        # main widget in the UI_Main, something like that:
+        #
+        # class UI_Main(QtWidgets.Qwidget):  <-- UI_Main is going to be our central widget 
+        # ... all UI stuff + signal handling for the thread
+        #
+        # class CreateUIThread(QMainWindow):
+        #     def __init__(self):
+        #         super(CreateUIThread, self).__init__()
+        #         self.setObjectName("MainWindow")
+        #         self.resize(800, 600)
+        #         self.central_widget = UI_Main()
+        #         self.setCentralWidget(self.central_widget)
 
-        self.btn_measure.clicked.connect(self.UpdateUI)
+        self.setupUI(self)
+        self.btn_measure.clicked.connect(self.UpdateUI)  # move this to UI_main
         self.show()
 
-    def UpdateUI(self):
+    def UpdateUI(self):  # move this to UI_main
         self.getMeasurement = BeginMeasurements()
         print(str(type(self.getMeasurement)))
         self.sample_measuredText.setText(self.sample_edit.text())
@@ -176,18 +195,13 @@ class CreateUIThread(QMainWindow, UI_Main):
         self.getMeasurement.finished.connect(self.done)
         self.getMeasurement.start()
 
-    def change(self, word):
+    def change(self, word): # UI_main
         print(9)
         _translate = QtCore.QCoreApplication.translate
         print(10)
         self.Rs_measuredText.setText(_translate("MainWindow", "test"))
 
-    def done(self):
-        """
-        Show the message that fetching posts is done.
-        Disable Stop button enable the Start one and reset progress bar to 0.
-        :return:
-        """
+    def done(self):  # UI_main
         QMessageBox.information(self, "Done!", "Done fetching posts!")
 
 
@@ -195,9 +209,3 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     form = CreateUIThread()
     sys.exit(app.exec_())
-
-
-
-
-
-
